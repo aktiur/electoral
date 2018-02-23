@@ -1,15 +1,12 @@
 import sys
-import subprocess
 import re
 from pathlib import Path
 from collections import OrderedDict
-from contextlib import contextmanager
 import pandas as pd
 
 from parsers import type1
 
-TABULA_JAR = 'tabula-1.0.1-jar-with-dependencies.jar'
-FILENAME_FORMAT = r'^T(?P<type>\d)_(?P<insee>\w{5})_(?P<commune>\d+)(?:_\d{2})?\.pdf'
+FILENAME_FORMAT = r"^T(?P<type>\d)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.pdf"
 
 
 COLUMNS = OrderedDict([
@@ -38,21 +35,6 @@ COLUMNS = OrderedDict([
 ])
 
 
-@contextmanager
-def open_file(filename):
-    try:
-        proc = subprocess.Popen(
-            ['java', '-jar', TABULA_JAR, filename, '--pages', 'all', '--lattice'],
-            stdout=subprocess.PIPE
-        )
-        yield proc.stdout
-    except:
-        proc.kill()
-        raise
-    finally:
-        proc.wait()
-
-
 def format_output(df, insee, commune):
     df['TypeListe'] = 'G'
     df['CodeDepartement'] = insee[:2]
@@ -66,7 +48,7 @@ def format_output(df, insee, commune):
         'date_naissance': 'DateDeNaissance',
         'lieu_naissance': 'NomComNaissance',
         'departement_naissance': 'DeptNaissance',
-        'adresse': 'LIbeelleVoie',
+        'adresse': 'LibelleVoie',
         'code_postal': 'CodePostal',
         'ville': 'VilleLocalite',
         'complement': 'ComplementDeLocalisation1',
@@ -87,18 +69,23 @@ def handle_file(input_file, output_file, error_file):
 
     format, insee, commune = match.groups()
 
-    with open_file(input_file) as infd:
-        df = pd.read_csv(infd)
+    df = pd.read_csv(input_file)
 
-        res, err = type1.parse(df)
+    res, err = type1.parse(df)
 
-        format_output(res, insee, commune).to_csv(output_file, index=False)
-        err.to_csv(error_file, index=False)
+    format_output(res, insee, commune).to_csv(output_file, index=False)
+    err.to_csv(error_file, index=False)
 
 
 if __name__ == '__main__':
     input_file = Path(sys.argv[1])
-    output_file = input_file.with_suffix('.csv')
-    error_file = input_file.with_name(input_file.stem + '_errors.csv')
+
+    output_dir = Path.cwd() / 'out'
+    error_dir = Path.cwd() / 'err'
+    output_dir.mkdir(exist_ok=True)
+    error_dir.mkdir(exist_ok=True)
+
+    output_file = output_dir / input_file.name
+    error_file = error_dir / input_file.name
 
     handle_file(str(input_file), str(output_file), str(error_file))

@@ -8,7 +8,7 @@ Né\(e\) le (?P<date_naissance>\d{2}/\d{2}/\d{4})
 $""".replace('\n', '')
 
 REGEX_2 = r"""^
-(?P<adresse>[\w().°'-]+(?: +[\w().°'-]+)*)(?: |\r)(?P<code_postal>\d{4,5})(?P<ville>[\w'-]+(?: [\w'-]+)*)
+(?P<adresse>[\w().°'-]+(?:(?: |\r)+[\w().°'-]+)*)(?: |\r)(?P<code_postal>\d{4,5})(?P<ville>[\w'-]+(?:(?: |\r)[\w'-]+)*)
 (?:\r(?P<complement>[^\r]+))?
 $""".replace('\n', '')
 
