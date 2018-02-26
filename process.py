@@ -7,7 +7,7 @@ import pandas as pd
 
 from parsers import type1
 
-FILENAME_FORMAT = r"^T(?P<type>\d)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.csv"
+FILENAME_FORMAT = r"^T(?P<type>\w)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.csv"
 
 
 COLUMNS = OrderedDict([
@@ -36,6 +36,15 @@ COLUMNS = OrderedDict([
 ])
 
 
+class IncorrectFilenameException(Exception):
+    pass
+
+
+class UnknownFormatException(Exception):
+    pass
+
+
+
 def format_output(df, insee, commune):
     df['TypeListe'] = 'G'
     df['CodeDepartement'] = insee[:2]
@@ -61,12 +70,10 @@ def handle_file(input_file, output_file, error_file):
     match = re.match(FILENAME_FORMAT, path.name)
 
     if not match:
-        sys.stderr.write('Format de nom de fichier incorrect: {}'.format(input_file))
-        sys.exit(1)
+        raise IncorrectFilenameException()
 
     if match.group('type') != '1':
-        sys.stderr.write('Format T{} non traité : {}'.format(match.group('type'), input_file))
-        sys.exit(2)
+        raise UnknownFormatException()
 
     format, insee, commune = match.groups()
 
@@ -75,23 +82,40 @@ def handle_file(input_file, output_file, error_file):
     res, err = type1.parse(df)
 
     format_output(res, insee, commune).to_csv(output_file, index=False, sep=';', )
-    err.to_csv(error_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
-    return len(err), len(res) / (len(res)+len(err)) * 100
+    if len(err):
+        err.to_csv(error_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+
+    return len(err), len(res)
 
 
 if __name__ == '__main__':
-    input_dir = Path(sys.argv[1])
+    main_dir = Path(sys.argv[1])
 
-    output_dir = Path.cwd() / 'out'
-    error_dir = Path.cwd() / 'err'
+    input_dir = main_dir / 'pretreated'
+    output_dir = main_dir / 'out'
+    error_dir = main_dir / 'err'
     output_dir.mkdir(exist_ok=True)
     error_dir.mkdir(exist_ok=True)
 
-    for f in input_dir.glob('*.csv'):
-        nb_errs, success_rate = handle_file(f, output_dir / f.name, error_dir / f.name)
+    total_successes = 0
+    total_errors = 0
 
-        sys.stdout.write(
-            '{: >35} {:5d} errors {: 6.02f} % success\n'.format(
-                f.stem, nb_errs, success_rate
-            ))
+    for f in input_dir.glob('*.csv'):
+        try:
+            nb_errs, nb_successes = handle_file(f, output_dir / f.name, error_dir / f.name)
+            total_errors += nb_errs
+            total_successes += nb_successes
+            sys.stdout.write(
+                '{: <35} {:5d} errors {: >8.2f} % success\n'.format(
+                    f.stem, nb_errs, nb_successes / (nb_successes + nb_errs)
+                ))
+            sys.stdout.flush()
+        except IncorrectFilenameException:
+            sys.stderr.write('{: <35} [nom de fichier incorrect]\n'.format(f.stem))
+        except UnknownFormatException:
+            sys.stderr.write('{: <35} [format du fichier inconnu]\n'.format(f.stem))
+
+    sys.stderr.write('{: <35} {:5d} errors {: >8.2f} % success\n'.format(
+        'TOTAL', total_errors, total_successes / (total_successes + total_errors) * 100)
+    )
