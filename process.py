@@ -1,5 +1,6 @@
 import sys
 import re
+import csv
 from pathlib import Path
 from collections import OrderedDict
 import pandas as pd
@@ -73,19 +74,24 @@ def handle_file(input_file, output_file, error_file):
 
     res, err = type1.parse(df)
 
-    format_output(res, insee, commune).to_csv(output_file, index=False)
-    err.to_csv(error_file, index=False)
+    format_output(res, insee, commune).to_csv(output_file, index=False, sep=';', )
+    err.to_csv(error_file, index=False, quoting=csv.QUOTE_NONNUMERIC)
+
+    return len(err), len(res) / (len(res)+len(err)) * 100
 
 
 if __name__ == '__main__':
-    input_file = Path(sys.argv[1])
+    input_dir = Path(sys.argv[1])
 
     output_dir = Path.cwd() / 'out'
     error_dir = Path.cwd() / 'err'
     output_dir.mkdir(exist_ok=True)
     error_dir.mkdir(exist_ok=True)
 
-    output_file = output_dir / input_file.name
-    error_file = error_dir / input_file.name
+    for f in input_dir.glob('*.csv'):
+        nb_errs, success_rate = handle_file(f, output_dir / f.name, error_dir / f.name)
 
-    handle_file(str(input_file), str(output_file), str(error_file))
+        sys.stdout.write(
+            '{: >35} {:5d} errors {: 6.02f} % success\n'.format(
+                f.stem, nb_errs, success_rate
+            ))
