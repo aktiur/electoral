@@ -6,7 +6,7 @@ import pandas as pd
 
 from parsers import type1
 
-FILENAME_FORMAT = r"^T(?P<type>\d)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.pdf"
+FILENAME_FORMAT = r"^T(?P<type>\d)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.csv"
 
 
 COLUMNS = OrderedDict([
