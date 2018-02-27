@@ -41,7 +41,9 @@ REGEX_2 = fr"""^
 $""".replace('\n', '')
 
 
-def parse(df):
+def parse(input_file):
+    df = pd.read_csv(input_file)
+
     # éliminer les lignes de headers répétées
     df = df[df.iloc[:, 0] != df.columns[0]]
 
@@ -68,7 +70,4 @@ def parse(df):
 
     total = pd.concat([df, informations, adresse], axis=1)
 
-    return (
-        res[keep],
-        total[~keep]
-    )
+    return (res[keep], total[~keep])

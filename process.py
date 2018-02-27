@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import re
 import csv
@@ -5,9 +7,15 @@ from pathlib import Path
 from collections import OrderedDict
 import pandas as pd
 
-from parsers import type1
+from parsers import type1, type2
 
 FILENAME_FORMAT = r"^T(?P<type>\w)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.csv"
+
+
+PARSERS = {
+    1: type1,
+    2: type2,
+}
 
 
 COLUMNS = OrderedDict([
@@ -72,14 +80,15 @@ def handle_file(input_file, output_file, error_file):
     if not match:
         raise IncorrectFilenameException()
 
-    if match.group('type') != '1':
+    try:
+        parser_type = int(match.group('type'))
+        parser = PARSERS[parser_type]
+    except (ValueError, KeyError):
         raise UnknownFormatException()
 
     format, insee, commune = match.groups()
 
-    df = pd.read_csv(input_file)
-
-    res, err = type1.parse(df)
+    res, err = parser.parse(input_file)
 
     format_output(res, insee, commune).to_csv(output_file, index=False, sep=';', )
 
@@ -108,7 +117,7 @@ if __name__ == '__main__':
             total_successes += nb_successes
             sys.stdout.write(
                 '{: <35} {:5d} errors {: >8.2f} % success\n'.format(
-                    f.stem, nb_errs, nb_successes / (nb_successes + nb_errs)
+                    f.stem, nb_errs, nb_successes / (nb_successes + nb_errs) * 100
                 ))
             sys.stdout.flush()
         except IncorrectFilenameException:
