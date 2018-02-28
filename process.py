@@ -9,7 +9,7 @@ import pandas as pd
 
 from parsers import type1, type2
 
-FILENAME_FORMAT = r"^T(?P<type>\w)_(?P<insee>\w{5})_(?P<commune>[\w '-]+)(?:_\d{2})?\.csv"
+FILENAME_FORMAT = r"^T(?P<type>\w)_(?P<insee>\w{5})_(?P<commune>(?:[\w '-]|\\ )+)(?:_\d{2})?\.csv"
 
 
 PARSERS = {
@@ -98,6 +98,10 @@ def handle_file(input_file, output_file, error_file):
     return len(err), len(res)
 
 
+def rate(successes, errors):
+    return '{:.2f}'.format(successes/(successes+errors)*100) if successes + errors else '---'
+
+
 if __name__ == '__main__':
     main_dir = Path(sys.argv[1])
 
@@ -115,16 +119,22 @@ if __name__ == '__main__':
             nb_errs, nb_successes = handle_file(f, output_dir / f.name, error_dir / f.name)
             total_errors += nb_errs
             total_successes += nb_successes
-            sys.stdout.write(
-                '{: <35} {:5d} errors {: >8.2f} % success\n'.format(
-                    f.stem, nb_errs, nb_successes / (nb_successes + nb_errs) * 100
-                ))
+            if nb_successes + nb_errs:
+                sys.stdout.write(
+                    '{: <35} {:5d} errors {: >8} % success\n'.format(
+                        f.stem, nb_errs, rate(nb_successes, nb_errs)
+                    ))
+            else:
+                sys.stdout.write(
+                    '{: <35} {:5d} errors {: >8} % success\n'.format(
+                        f.stem, nb_errs, rate(nb_successes, nb_errs)
+                    ))
             sys.stdout.flush()
         except IncorrectFilenameException:
             sys.stderr.write('{: <35} [nom de fichier incorrect]\n'.format(f.stem))
         except UnknownFormatException:
             sys.stderr.write('{: <35} [format du fichier inconnu]\n'.format(f.stem))
 
-    sys.stderr.write('{: <35} {:5d} errors {: >8.2f} % success\n'.format(
-        'TOTAL', total_errors, total_successes / (total_successes + total_errors) * 100)
+    sys.stderr.write('{: <35} {:5d} errors {: >8} % success\n'.format(
+        'TOTAL', total_errors, rate(total_successes, total_errors))
     )
