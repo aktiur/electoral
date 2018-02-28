@@ -3,23 +3,29 @@ import csv
 import re
 from itertools import islice
 
-C_NOMS = "A-ZÀÂÄÉÈÊEËÎÏÔÖÙÛÜ-"
+C_NOMS = "A-ZÀÂÄÉÈÊEËÎÏÔÖÙÛÜ'-"
 
 R_MOT_SIMPLE = r"[{0}]+"
 R_MOT_COMPLEXE = r"[{0}][{1}]*"
 
-R_MOTS = r"{0}(?: {0})*"
+R_MOTS = r"{0}(?:(?: |\r)+{0})*"
+R_MOTS_SANS_RC = r"{0}(?: +{0})*"
 
 R_LIEU = R_MOTS.format(R_MOT_SIMPLE.format("\w'/&()[\]°*.,:/-"))
 
-R_NUMERO = r"^\d+\r\d+$"
+R_NUMERO = r"^\d+(\r\d+)*$"
 
 R_NOM_FAMILLE = R_MOTS.format(R_MOT_SIMPLE.format(C_NOMS))
-R_PRENOMS = R_MOTS.format(R_MOT_SIMPLE.format(r'\w,-'))
+R_NOM_USAGE = R_MOTS_SANS_RC.format(R_MOT_SIMPLE.format(C_NOMS))
+R_PRENOMS = R_MOTS.format(R_MOT_SIMPLE.format(r"\w,'.-")) + '?'
 
 R_NAISSANCE = fr"^(?P<date_naissance>\d{{2}}/\d{{2}}/\d{{4}})[MF]\r(?P<departement_naissance>\d+)\r?(?P<lieu_naissance>{R_LIEU})$"
-R_NOMS = fr"(?P<nom>{R_NOM_FAMILLE}) (?P<prenoms>{R_PRENOMS})(?:\rEp\. (?P<nom_usage>{R_NOM_FAMILLE}))?"
-R_ADRESSE = fr"(?P<adresse>{R_LIEU})\r+(?P<code_postal>\d{{5}})\r(?P<ville>{R_LIEU})"
+R_NOMS = fr"^(?P<nom>{R_NOM_FAMILLE}) (?P<prenoms>{R_PRENOMS})(?:\r(?:Ep\. )?(?P<nom_usage>{R_NOM_FAMILLE}))?$"
+R_ADRESSE = fr"^(?P<adresse>{R_LIEU})\r+(?P<code_postal>\d{{5}})\r?(?P<ville>{R_LIEU})$"
+
+
+def select_fields(line):
+    return tuple(islice((f for f in line[1:] if len(f) > 4), 3))
 
 
 def process_file(input_file):
@@ -27,8 +33,9 @@ def process_file(input_file):
         check = re.compile(R_NUMERO)
         r = csv.reader(f)
         for line in r:
-            if check.match(line[0]):
-                yield tuple(islice((k for k in line[1:] if k), 3))
+            if check.match(line[0]) and len(line) > 2:
+                # we keep the three first long enough fields
+                yield select_fields(line)
 
 
 def parse(input_file):
