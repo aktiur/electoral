@@ -3,6 +3,7 @@
 import sys
 import re
 import csv
+import traceback
 from pathlib import Path
 from collections import OrderedDict
 import pandas as pd
@@ -134,6 +135,9 @@ if __name__ == '__main__':
             sys.stderr.write('{: <35} [nom de fichier incorrect]\n'.format(f.stem))
         except UnknownFormatException:
             sys.stderr.write('{: <35} [format du fichier inconnu]\n'.format(f.stem))
+        except Exception as e:
+            sys.stderr.write('{: <35} [erreur inconnue, voir stacktrace]\n'.format(f.stem))
+            traceback.print_exc(file=sys.stderr)
 
     sys.stderr.write('{: <35} {:5d} errors {: >8} % success\n'.format(
         'TOTAL', total_errors, rate(total_successes, total_errors))
