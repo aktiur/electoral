@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CONCURRENCY=3
+
 mkdir -p $1/pretreated
 
-ls $1/pdf/*.pdf | parallel sh -c "\"java -jar tabula-1.0.1-jar-with-dependencies.jar {} --pages all --lattice > '$1/pretreated/{/.}.csv'\""
+./convert-list-args.sh "$1" | xargs -0 -n 3 -P $CONCURRENCY ./convert-file.sh
