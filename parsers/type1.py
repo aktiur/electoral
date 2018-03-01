@@ -5,12 +5,12 @@ R_MOT_COMPLEXE = r"[{0}][{1}]*"
 
 R_MOTS = r"{0}(?:(?: |\r)+{0})*"
 
-C_NOM_INIT = r"\w'(."
+C_NOM_INIT = r"\w,'(."
 C_NOM = r"\w'(),.-"
 C_PRENOMS_INIT = C_NOM_INIT
 C_PRENOMS = C_NOM
 C_USAGE = C_NOM
-C_LIEU = r"\w'/&()[\]°*.,:/-"
+C_LIEU = r"\w'/&()[\]°\"*.,:/-"
 C_DEP = r"\w'-"
 C_ADRESSE = C_LIEU
 C_VILLE =  C_LIEU
@@ -27,7 +27,7 @@ R_LIEU_NAISSANCE = R_MOTS.format(R_MOT_SIMPLE.format(C_LIEU)) + "?"
 R_DEP = R_MOTS.format(R_MOT_SIMPLE.format(C_DEP))
 
 REGEX_1 = fr"""^
-(?P<nom_famille>{R_NOM})(?: |\r)+-(?: |\r)+(?P<prenoms>{R_PRENOMS})\r
+(?P<nom_famille>{R_NOM})(?:(?: |\r)+-(?: |\r)+(?P<prenoms>{R_PRENOMS}))?\r
 (?:- +(?:\.|(?:[Ee][Pp]\. +)?(?P<nom_usage>{R_USAGE}))\r)?
 Né\(e\) +le +(?P<date_naissance>{R_DATE}) (?:à )?(?P<lieu_naissance>{R_LIEU_NAISSANCE})?(?:(?: |\r)*?\((?P<departement_naissance>{R_DEP})\))?
 $""".replace('\n', '')
@@ -36,7 +36,7 @@ R_ADRESSE = R_MOTS.format(R_MOT_SIMPLE.format(C_ADRESSE))
 R_VILLE = R_MOTS.format(R_MOT_SIMPLE.format(C_VILLE))
 
 REGEX_2 = fr"""^
-(?P<adresse>{R_ADRESSE})(?: |\r)+(?P<code_postal>\d{{2,5}})(?P<ville>{R_VILLE})
+(?:(?P<adresse>{R_ADRESSE})(?: |\r)+)?(?P<code_postal>\d{{2,5}})(?P<ville>{R_VILLE})
 (?:\r(?P<complement>[^\r]+))?
 $""".replace('\n', '')
 
