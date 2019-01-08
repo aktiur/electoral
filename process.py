@@ -10,7 +10,7 @@ import pandas as pd
 
 from parsers import type1, type2
 
-FILENAME_FORMAT = r"^T(?P<type>\w)_(?P<insee>\w{5})_(?P<commune>(?:[\w '-]|\\ )+)(?:_\d{2})?\.csv"
+FILENAME_FORMAT = r"^T(?P<type>\w)_(?P<insee>\w{5})_(?P<commune>(?:[\w '-]|\\ )+)(?:_\d{2,3})?\.csv"
 
 
 PARSERS = {
